@@ -1,3 +1,7 @@
+This project is a complete copy of the build system used in spring projects (see http://www.springsource.com/).  The original authors are Colin Sampaleanu and Keith Donald.
+
+=======================================================================
+
 Contained in this directory is the Spring Jumpstart common build system.
 
 It is ant 1.6 based and uses Ivy for dependency management.
