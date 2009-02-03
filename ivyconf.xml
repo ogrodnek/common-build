@@ -11,7 +11,7 @@
 				<ivy pattern="${repository.dir}/[organisation]/[module]/ivy-[revision].xml" />
 				<artifact pattern="${repository.dir}/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
 			</filesystem>
-			<ivyrep name="ivyrep" />
+			<ibiblio name="maven2" m2compatible="true" />
 		</chain>
   </resolvers>
 </ivyconf>
