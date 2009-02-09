@@ -1,4 +1,4 @@
-<ivyconf>
+<ivysettings>
 	<properties file="${ivy.conf.dir}/ivyconf.properties"/>
 	<conf defaultResolver="resolverChain"/>
 	<resolvers>
@@ -14,4 +14,4 @@
 			<ibiblio name="maven2" m2compatible="true" />
 		</chain>
   </resolvers>
-</ivyconf>
+</ivysettings>
