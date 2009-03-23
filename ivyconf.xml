@@ -1,5 +1,6 @@
 <ivysettings>
 	<properties file="${ivy.conf.dir}/ivyconf.properties"/>
+  <properties file="${basedir}/ivyconf.properties"/>
 	<conf defaultResolver="resolverChain"/>
 	<resolvers>
 		<chain name="resolverChain" returnFirst="true">
@@ -11,7 +12,16 @@
 				<ivy pattern="${repository.dir}/[organisation]/[module]/ivy-[revision].xml" />
 				<artifact pattern="${repository.dir}/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
 			</filesystem>
+			<filesystem name="local-repo">
+				<ivy pattern="${local.repo.dir}/[organisation]/[module]/ivy-[revision].xml" />
+				<artifact pattern="${local.repo.dir}/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
+			</filesystem>
+      <url name="s3-repo">
+        <ivy pattern="${s3.repo.url}/[organisation]/[module]/ivy-[revision].xml" />
+        <artifact pattern="${s3.repo.url}/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
+      </url>
 			<ibiblio name="maven2" m2compatible="true" />
+			<ibiblio name="jboss" m2compatible="true" root="http://repository.jboss.org/maven2/" />
 		</chain>
   </resolvers>
 </ivysettings>
