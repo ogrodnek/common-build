@@ -3,13 +3,13 @@
 <!--
 
  Copyright 2003-2005 the original author or authors.
-  
+
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
  You may obtain a copy of the License at
- 
+
       http://www.apache.org/licenses/LICENSE-2.0
- 
+
  Unless required by applicable law or agreed to in writing, software
  distributed under the License is distributed on an "AS IS" BASIS,
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,18 +21,23 @@
  - - -
 -->
 
-<project name="common-targets" xmlns:ivy="antlib:fr.jayasoft.ivy.ant">
+<project name="common-targets" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+  <!-- defined to get rid of warnings -->
+  <property name="common.build.dir" location="."/>
+
+  <property name="tools.dir" location="tools"/>
 
   <!-- try to load ivy here from local lib dir, in case the user has not already dropped
        it into ant's lib dir (note that the latter copy will always take precedence).
        We will not fail as long as local lib dir exists (it may be empty) and
        ivy is in at least one of ant's lib dir or the local lib dir. -->
   <path id="ivy.lib.path">
-    <fileset dir="${common.build.dir}/lib" includes="*.jar"/>
+    <fileset dir="${common.build.dir}/lib" includes="**/*.jar"/>
   </path>
-  <taskdef resource="fr/jayasoft/ivy/ant/antlib.xml"
-           uri="antlib:fr.jayasoft.ivy.ant" classpathref="ivy.lib.path"/>
-  
+  <taskdef resource="org/apache/ivy/ant/antlib.xml"
+    uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+
   <!-- targets:  displays all targets suitable for developer use -->
   <target name="targets" depends="init">
     <echo>
@@ -60,36 +65,42 @@
 
   <target name="init.pre">
 
-    <!-- we default project.version to be ${project.base.version}-${build.timestamp}
+    <!-- we default project.version to be ${project.base.version}-${internal.internal.build.timestamp}
        where project.base.version defaults to 1.0-dev.
-       
+
        An importing project or master build should override project.base.version.
        For a release build which doesn't need the build timestamp, should override
        project.version itself to just be equal to ${project.base.version} -->
     <tstamp>
-      <format property="build.timestamp" pattern="yyyyMMddHHmmss" />
+      <format property="internal.internal.build.timestamp" pattern="yyyyMMddHHmmss" />
     </tstamp>
     <tstamp>
       <format property="TSTAMPCOL" pattern="hh:mm" />
     </tstamp>
 
     <property name="ivy.conf.dir" value="${common.build.dir}" />
+    <property name="ivy.resolve.mode" value="default" />
+    <condition property="ivy.status" value="release" else="integration">
+      <equals arg1="${project.stage}" arg2="prod" />    
+    </condition>
+    <property name="ivy.sync" value="true" />
+    <property name="ivy.refresh" value="false" />
 
-    <property name="org.name" value="springframework.org" />
-    <property name="org.package.prefix" value="org.springframework" />
+    <property name="org.name" value="myorg" />
+    <property name="org.package.prefix" value="com.myorg" />
     <property name="project.name" value="${ant.project.name}" />
-    <property name="project.webapp.name" value="${ant.project.name}" />
-  	<property name="project.title" value="${project.name}" />
-   	<property name="project.base.version" value="1.0-dev" />
-    <property name="project.version" value="${project.base.version}-${build.timestamp}" />
-	<property name="project.copyright" value="Copyright &#169; 2002-2006. All Rights Reserved."/>
-  	
+    <property name="project.title" value="${project.name}" />
+    <property name="project.base.version" value="1.1-dev" />
+    <property name="project.version" value="${project.base.version}-${internal.internal.build.timestamp}" />
+    <property name="project.copyright" value="Copyright (c) 2010. All Rights Reserved."/>
+
     <property environment="myenv" />
 
     <!-- Compiler options -->
     <property name="optimize" value="false" />
     <property name="debug" value="true" />
-    <property name="deprecation" value="false" />
+    <!-- scalac prefers on/off instead of true/false -->
+    <property name="deprecation" value="on" />
     <property name="javac.source" value="1.5" />
     <property name="javac.target" value="1.5" />
 
@@ -102,8 +113,8 @@
     <echo message='project.name = "${project.name}"' />
     <echo message='project.webapp.name = "${project.webapp.name}"' />
     <echo message='project.title = "${project.title}"' />
-   	<echo message='project.base.version = "${project.base.version}"' />
-  	<echo message='project.version = "${project.version}"' />
+    <echo message='project.base.version = "${project.base.version}"' />
+    <echo message='project.version = "${project.version}"' />
     <echo message='ant.file = "${ant.file}"' />
     <echo message='basedir = "${basedir}"' />
     <echo message='user.dir = "${user.dir}"' />
@@ -145,14 +156,6 @@
       <exclude name="**/*.htm" />
     </patternset>
 
-    <patternset id="web.public.content.files">
-      <patternset refid="image.files" />
-      <patternset refid="html.files" />
-      <include name="index.jsp" />
-      <include name="**/*.js" />
-      <exclude name="WEB-INF/**" />
-    </patternset>
-
     <patternset id="image.files">
       <include name="**/*.png" />
       <include name="**/*.gif" />
@@ -165,9 +168,12 @@
       <include name="**/*.css" />
     </patternset>
 
-    <patternset id="web.protected.content.files">
-      <patternset refid="scriptlet.files" />
-      <patternset refid="web.config.files" />
+    <patternset id="web.public.content.files">
+      <patternset refid="image.files" />
+      <patternset refid="html.files" />
+      <include name="index.jsp" />
+      <include name="**/*.js" />
+      <exclude name="WEB-INF/**" />
     </patternset>
 
     <patternset id="scriptlet.files">
@@ -182,8 +188,12 @@
       <include name="WEB-INF/classes/**/*.conf" />
     </patternset>
 
+    <patternset id="web.protected.content.files">
+      <patternset refid="scriptlet.files" />
+      <patternset refid="web.config.files" />
+    </patternset>
+
     <property name="target.lib.dir" value="${target.artifacts.dir}/lib" />
-    <property name="project.war" value="${target.artifacts.war.dir}/${project.webapp.name}.war" />
 
     <!-- convert appserver specific properties to final property names -->
     <echoproperties destfile="properties.tmp">
@@ -200,10 +210,10 @@
   <target name="init.post2">
 
     <path id="compile.classpath">
-      <fileset dir="${lib.dir}/global">
+      <fileset dir="${lib.dir}/default">
         <include name="**/*.jar" />
       </fileset>
-      <fileset dir="${lib.dir}/buildtime">
+      <fileset dir="${lib.dir}/buildtime" erroronmissingdir="false">
         <include name="**/*.jar" />
       </fileset>
     </path>
@@ -258,15 +268,48 @@
   </target>
 
   <!-- clean:  Cleans up generated stuff -->
-  <target name="clean" depends="init" description="Scrub build, distribution, and test results directories">
+  <target name="clean" depends="init,clean-ivy-cache-if-set,clean-gen-unless-set" description="Scrub build, distribution, and test results directories">
     <delete dir="${target.dir}" />
     <!-- also clean up dist.dir, in case it is not under target.dir -->
     <delete dir="${dist.dir}" />
   </target>
 
-  <!-- clean-all:  Also cleans lib dir stuff pulled down by ivy -->
+  <target name="clean-gen-unless-set" unless="skip.clean.gen">
+    <!-- also clean up generated java source, in case it is not under target.dir -->
+    <delete dir="${target.gen.java.dir}" />
+  </target>
+
+  <!-- clean-all:  Also cleans lib and tools dir stuff pulled down by ivy -->
   <target name="clean-all" depends="clean" description="Calls clean, but also cleans lib dir dependencies pulled down by Ivy">
     <delete dir="${lib.dir}" />
+    <delete dir="${tools.dir}" />
+  </target>
+
+  <!--
+  This is deprecated; callers should use clean instead. Clean will then
+  optionally clean the ivy cache is clean.ivy.cache is set.
+  -->
+  <target name="reallyclean" depends="ivy.configure,clean-all" description="Calls clean-all, but also cleans the ivy local cache if clean.ivy.cache is set">
+    <echo>
+      If you really want to clear ${ivy.cache.dir}, either call:
+
+        ant clean-ivy-cache
+
+      Or set:
+
+        clean.ivy.cache=true
+    </echo>
+  </target>
+
+  <target name="clean-ivy-cache-set">
+    <property name="clean.ivy.cache" value="true"/>
+  </target>
+
+  <target name="clean-ivy-cache-if-set" depends="ivy.configure" if="clean.ivy.cache">
+    <delete dir="${ivy.cache.dir}" />
+  </target>
+
+  <target name="clean-ivy-cache" depends="clean-ivy-cache-set,clean-ivy-cache-if-set" description="Deletes the ivy.cache.dir">
   </target>
 
   <!-- build.prepare:  Prepares the build directory -->
@@ -303,29 +346,40 @@
   </target>
 
   <target name="build.prepare.make.config.dirs">
-    <mkdir dir="${lib.dir}/global" />
+    <mkdir dir="${lib.dir}/default" />
     <mkdir dir="${lib.dir}/buildtime" />
     <mkdir dir="${lib.dir}/test" />
+    <mkdir dir="${tools.dir}" />
   </target>
 
   <target name="ivy.configure" depends="init">
     <echo>reading ivy config</echo>
-    <ivy:configure file="${ivy.conf.dir}/ivyconf.xml" />
+    <!--
+    Add override=true because ant is stupid and will reinvoke targets
+    if you execute multiple targets, e.g. ant target1 target2 will
+    have ivy.configure done twice for each target.
+    -->
+    <ivy:configure file="${ivy.conf.dir}/ivyconf.xml" override="true" />
+  </target>
+
+  <target name="ivy.graph" description="generate jar dependency graph" depends="retrieve">
+    <mkdir dir="${target.dir}/ivy-reports"/>
+    <ivy:report todir="${target.dir}/ivy-reports" graph="true"/>
   </target>
 
   <presetdef name="resolve.conf">
-    <ivy:resolve file="${basedir}/ivy.xml" conf="${conf}" />
+    <ivy:resolve file="${basedir}/ivy.xml" conf="${conf}" refresh="${ivy.refresh}" resolveMode="${ivy.resolve.mode}" showprogress="false"/>
   </presetdef>
   <presetdef name="resolve.all">
-    <ivy:resolve file="${basedir}/ivy.xml" conf="*" />
+    <ivy:resolve file="${basedir}/ivy.xml" conf="*" refresh="${ivy.refresh}" resolveMode="${ivy.resolve.mode}" showprogress="false"/>
   </presetdef>
 
   <!-- presetdef to retrieve one or more confs, defaulting to "default" -->
   <presetdef name="retrieve.conf">
-    <ivy:retrieve pattern="${ivy.retrieve.pattern}" conf="default" />
+    <ivy:retrieve pattern="${ivy.retrieve.pattern}" sync="${ivy.sync}" conf="default" />
   </presetdef>
   <presetdef name="retrieve.all">
-    <ivy:retrieve pattern="${${ivy.retrieve.pattern}}" conf="*" />
+    <ivy:retrieve pattern="${ivy.retrieve.pattern}" sync="${ivy.sync}" conf="*" />
   </presetdef>
 
   <target name="retrieve.all" depends="resolve.all">
@@ -344,7 +398,7 @@
   <target name="resolve" depends="build.prepare, ivy.configure, resolve.pre, resolve.main, resolve.post" />
   <target name="resolve.pre" />
   <target name="resolve.main">
-    <property name="main.build.configs" value="global,buildtime,test" />
+    <property name="main.build.configs" value="*" />
     <resolve.conf conf="${main.build.configs}" />
   </target>
   <target name="resolve.post" />
@@ -370,13 +424,12 @@
   <target name="retrieve-to-repo" depends="resolve">
     <property name="retrieve.to.repo.conf" value="*" />
     <property name="retrieve.to.repo.dir" value="${target.dir}/repo" />
-    <property name="retrieve.to.repo.pattern"
-	          value="[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
-    <property name="retrieve.to.repo.pattern.ivy" 
-	          value="[organisation]/[module]/ivy-[revision].xml" />
-    <retrieve.conf conf="${retrieve.to.repo.conf}"
-	               pattern="${retrieve.to.repo.dir}/${retrieve.to.repo.pattern}"
-				   ivypattern="${retrieve.to.repo.dir}/${retrieve.to.repo.pattern.ivy}"/>
+    <property name="retrieve.to.repo.pattern" value="[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
+    <property name="retrieve.to.repo.pattern.ivy" value="[organisation]/[module]/ivy-[revision].xml" />
+    <retrieve.conf
+      conf="${retrieve.to.repo.conf}"
+      pattern="${retrieve.to.repo.dir}/${retrieve.to.repo.pattern}"
+      ivypattern="${retrieve.to.repo.dir}/${retrieve.to.repo.pattern.ivy}"/>
   </target>
 
   <!-- statics: copies statics files before compiles -->
@@ -386,23 +439,30 @@
   <!-- hook target -->
   <target name="statics.pre" />
 
-  <!-- copy main statics -->
-  <target name="statics.main">
+  <target name="statics.main.mkdir">
     <mkdir dir="${target.artifacts.dir}" />
+  </target>
 
-    <!-- copy everything from the source dir, except java files. Do not filter. Files that need filtering should go in resources. -->
+  <target name="statics.main.classes">
+    <!-- copy everything from the source dir, except java and javadoc files. Do not filter. Files that need filtering should go in resources. -->
     <copy todir="${target.classes.dir}">
       <fileset dir="${src.java.main.dir}">
         <exclude name="**/*.java" />
+        <exclude name="**/*.groovy" />
+        <exclude name="**/package.html"/>
+        <exclude name="**/overview.html"/>
       </fileset>
     </copy>
-
-    <!-- copy resource files if neccessary, filtering for non-binary types -->
-    <available file="${src.resources.dir}" property="resources.exists" />
-    <antcall target="copy.resources" />
   </target>
 
-  <target name="copy.resources" if="resources.exists">
+  <!-- copy main statics -->
+  <target name="statics.main" depends="statics.main.mkdir,statics.main.classes,copy.resources"/>
+
+  <target name="copy.resources.check">
+    <available file="${src.resources.dir}" property="resources.exists" />
+  </target>
+
+  <target name="copy.resources" depends="copy.resources.check" if="resources.exists">
     <copy todir="${target.classes.dir}" filtering="on">
       <fileset dir="${src.resources.dir}">
         <patternset refid="std.files.to.filter" />
@@ -418,9 +478,7 @@
     </copy>
   </target>
 
-  <!-- copy test statics -->
-  <target name="statics.test">
-
+  <target name="statics.test.copy-src-to-target">
     <!-- copy everything from the source dir, except java files. Do not filter. Files
        that need filtering should source from ${src.test.resources.dir} -->
     <copy todir="${target.testclasses.dir}">
@@ -428,19 +486,23 @@
         <exclude name="**/*.java" />
       </fileset>
     </copy>
-
-    <!-- copy test resource files if neccessary, filtering for non-binary types -->
-    <available file="${src.test.resources.dir}" property="test.resources.exists" />
-    <antcall target="copy.test.resources" />
-
-    <!-- write out a test.properties file with common properties -->
-    <propertyfile file="${target.testclasses.dir}/test.properties" comment="Common unit/integration test properties">
-      <entry key="lastupate" type="date" value="now" />
-    </propertyfile>
-
   </target>
 
+  <target name="statics.test.write-test-properties">
+    <!-- write out a test.properties file with common properties -->
+    <propertyfile file="${target.testclasses.dir}/test.properties" comment="Common unit/integration test properties">
+      <entry key="lastupdate" type="date" value="now" />
+    </propertyfile>
+  </target>
+
+  <!-- copy test statics -->
+  <target name="statics.test" depends="statics.test.copy-src-to-target,copy.test.resources,statics.test.write-test-properties">
+  </target>
+
+  <available file="${src.test.resources.dir}" property="test.resources.exists" />
+
   <target name="copy.test.resources" if="test.resources.exists">
+    <!-- copy test resource files if neccessary, filtering for non-binary types -->
     <copy todir="${target.testclasses.dir}" filtering="on">
       <fileset dir="${src.test.resources.dir}">
         <patternset refid="std.files.to.filter" />
@@ -490,7 +552,7 @@
       </fileset>
     </copy>
   </target>
-  
+
   <!-- hook target -->
   <target name="statics.post" />
 
@@ -510,14 +572,14 @@
   <target name="compile.main">
 
     <!-- copy any non-java files from the generated java source dir -->
-    <echo>copying generated resources</echo>
+    <echo>copying generated resources ${target.gen.java.dir}</echo>
     <copy todir="${target.classes.dir}">
       <fileset dir="${target.gen.java.dir}">
         <exclude name="**/*.java" />
       </fileset>
     </copy>
 
-	<!-- copy any non-java files from the generated test java source dir -->
+    <!-- copy any non-java files from the generated test java source dir -->
     <echo>copying generated test resources</echo>
     <copy todir="${target.testclasses.dir}" >
       <fileset dir="${target.gen.java.test.dir}">
@@ -541,20 +603,30 @@
     </copy>
   </target>
 
-  <target name="compile.source">
-    <echo>compiling main sources</echo>
+  <target name="compile.source" depends="java.compile.source" />
+
+  <target name="java.compile.source">
+    <echo>compiling main java sources</echo>
     <javac destdir="${target.classes.dir}" debug="${debug}" deprecation="${deprecation}" optimize="${optimize}" source="${javac.source}" target="${javac.target}">
       <src path="${src.java.main.dir}" />
       <src path="${target.gen.java.dir}" />
+      <compilerarg value="-XprintRounds"/>
+      <compilerarg value="-s"/>
+      <compilerarg value="${target.gen.java.dir}"/>
       <classpath refid="compile.classpath" />
     </javac>
   </target>
 
-  <target name="compile.tests">
-    <echo>compiling test sources</echo>
+  <target name="compile.tests" depends="java.compile.tests" />
+
+  <target name="java.compile.tests">
+    <echo>compiling test java sources</echo>
     <javac destdir="${target.testclasses.dir}" debug="${debug}" deprecation="${deprecation}" optimize="${optimize}" source="${javac.source}" target="${javac.target}">
-		<src path="${src.java.test.dir}" />
-		<src path="${target.gen.java.test.dir}" />
+      <src path="${src.java.test.dir}" />
+      <src path="${target.gen.java.test.dir}" />
+      <compilerarg value="-XprintRounds"/>
+      <compilerarg value="-s"/>
+      <compilerarg value="${target.gen.java.test.dir}" />
       <classpath>
         <pathelement location="${target.classes.dir}" />
         <path refid="test.classpath" />
@@ -574,12 +646,42 @@
   </target>
 
   <!-- main jar target -->
-  <target name="jar.main">
+  <target name="jar.main" depends="jar.main.withMainClass,jar.main.withoutMainClass"/>
+
+  <!-- figure out if we need to include a Main-Class attribute or not -->
+  <!-- seems like there should be a better way to do this?.... -->
+  <condition property="jar.mainExists">
+    <isset property="project.main.class"/>
+  </condition>
+
+  <condition property="jar.mainNotExists">
+    <not>
+      <isset property="project.main.class" />
+    </not>
+  </condition>
+
+  <!-- jar without a Main-Class -->
+  <target name="jar.main.withoutMainClass" if="jar.mainNotExists" unless="build.web">
     <jar jarfile="${target.lib.dir}/${project.name}.jar">
       <manifest>
         <attribute name="Implementation-Vendor" value="${org.name}" />
         <attribute name="Implementation-Title" value="${project.title}" />
         <attribute name="Implementation-Version" value="${project.version}" />
+      </manifest>
+      <fileset dir="${target.classes.dir}">
+        <!-- todo, make this more selective, we don't neccessarily want to include everything here -->
+      </fileset>
+    </jar>
+  </target>
+
+  <!-- jar with a Main-Class -->
+  <target name="jar.main.withMainClass" if="jar.mainExists" unless="build.web">
+    <jar jarfile="${target.lib.dir}/${project.name}.jar">
+      <manifest>
+        <attribute name="Implementation-Vendor" value="${org.name}" />
+        <attribute name="Implementation-Title" value="${project.title}" />
+        <attribute name="Implementation-Version" value="${project.version}" />
+        <attribute name="Main-Class" value="${project.main.class}" />
       </manifest>
       <fileset dir="${target.classes.dir}">
         <!-- todo, make this more selective, we don't neccessarily want to include everything here -->
@@ -646,8 +748,8 @@
   </target>
   <target name="web.copy.libs">
     <!-- by default copy all classes -->
-    <copy todir="${target.war.expanded.dir}/WEB-INF/lib" flatten="true">
-      <fileset dir="${lib.dir}/global">
+    <copy todir="${target.war.expanded.dir}/WEB-INF/lib" flatten="true" overwrite="true">
+      <fileset dir="${lib.dir}/default">
         <include name="**/*.jar" />
       </fileset>
     </copy>
@@ -741,15 +843,21 @@
   <target name="ear.post" if="build.j2eeapp" />
 
   <!-- publish:  Construct and publish the project distributables -->
-  <target name="publish" depends="ear, publish.setup, publish.do.publish"
-          description="Publish this project in the ivy repository"/>
+  <target name="publish" depends="ear, publish.setup, publish.do.publish" description="Publish this project in the ivy repository" />
 
-  <target name="publish.setup">
+  <target name="publish.setup" depends="publish.setup.pre, publish.setup.main, publish.setup.jar, publish.setup.web, publish.setup.post"/>
   
+  <target name="publish.setup.pre"/>
+  <target name="publish.setup.main">
     <!-- we do physical publish by default, unless do.publish property set to "false" -->
     <condition property="publish.needed">
       <or>
-        <not><isset property="do.publish"/></not>
+        <!-- we'll publish if both do.publish and build.web are not set. -->
+        <and>
+          <not><isset property="do.publish"/></not>
+          <not><isset property="build.web"/></not>
+        </and>
+        <!-- or if you explicitly set do.publish. -->
         <istrue value="${do.publish}"/>
       </or>
     </condition>
@@ -765,15 +873,33 @@
     </tstamp>
 
     <mkdir dir="${ivy.distrib.dir}/jars" />
+  </target>
+  <target name="publish.setup.post"/>
+
+  <target name="publish.setup.jar" unless="build.web">
     <copy file="${target.lib.dir}/${project.name}.jar" tofile="${ivy.distrib.dir}/jars/${project.name}-${project.version}.jar" />
-    <copy file="${target.lib.dir}/${project.name}-src.zip" tofile="${ivy.distrib.dir}/jars/${project.name}-src-${project.version}.zip" />
+    <copy file="${target.lib.dir}/${project.name}-src.zip" tofile="${ivy.distrib.dir}/jars/${project.name}-src-${project.version}.zip" failonerror="no"/>
+    <copy file="${target.lib.dir}/${project.name}-thrift.zip" tofile="${ivy.distrib.dir}/jars/${project.name}-thrift-${project.version}.zip" failonerror="no" />
   </target>
-  
+
+  <target name="publish.setup.web" if="build.web">
+    <copy file="${project.war}" tofile="${ivy.distrib.dir}/jars/${project.name}-${project.version}.war" />
+    <copy file="${target.lib.dir}/${project.name}-src.zip" tofile="${ivy.distrib.dir}/jars/${project.name}-src-${project.version}.zip" failonerror="no"/>
+  </target>
+
   <target name="publish.do.publish" if="publish.needed">
-    <ivy:publish resolver="integration-repo" artifactspattern="${ivy.distrib.dir}/jars/[artifact]-[revision].[ext]" pubrevision="${project.version}" pubdate="${pubdate}" srcivypattern="${ivy.srcivypattern}" />
-    <echo message="project ${project.name} released with version ${project.version}" />
+    <ivy:publish 
+      resolver="integration-repo" 
+      artifactspattern="${ivy.distrib.dir}/jars/[artifact]-[revision].[ext]" 
+      pubrevision="${project.version}" 
+      pubdate="${pubdate}" 
+      srcivypattern="${ivy.srcivypattern}" 
+      replacedynamicrev="true" 
+      overwrite="true" 
+      status="${ivy.status}"/>
+    <echo message="project ${project.name} released with version ${project.version}, status ${ivy.status}" />
   </target>
-  
+
   <!-- dist:  Construct the project distributables, but really an alias for publish -->
   <target name="dist" depends="publish, dist.pre, dist.main, dist.post" description="Create all project distributables">
   </target>
@@ -786,10 +912,12 @@
   <!-- javadocs:  Creates the API documentation -->
   <target name="javadoc" depends="build.prepare" description="Create the project API documentation">
     <mkdir dir="${target.javadocs.dir}" />
-    <javadoc destdir="${target.javadocs.dir}" author="true" version="true" windowtitle="${project.title} ${project.version} API" doctitle="${project.title} ${project.version}" bottom="${project.copyright}">
+    <javadoc destdir="${target.javadocs.dir}" author="true" version="true" windowtitle="${project.title} ${project.version} API" doctitle="${project.title} ${project.version}" bottom="${project.copyright}"
+      overview="${src.java.main.dir}/overview.html">
       <classpath>
         <pathelement location="${target.classes.dir}" />
-        <pathelement location="${target.testclasses.dir}" />
+        <!-- removed this reference to target.testclasses.dir, doesn't seem correct: larry -->
+        <!-- <pathelement location="${target.testclasses.dir}" /> -->
         <path refid="compile.classpath"/>
       </classpath>
       <sourcepath>
@@ -839,7 +967,9 @@
   <!-- set fake default value, will not override existing setting -->
   <property name="test.arguments" value="-Dzzz456zzz" />
 
-  <target name="tests.prepare" depends="compile" unless="tests.prepare.done">
+  <target name="tests.pre" />
+
+  <target name="tests.prepare" depends="compile, tests.pre" unless="tests.prepare.done">
     <mkdir dir="${target.testresults.dir}" />
     <delete>
       <fileset dir="${target.testresults.dir}" includes="**/*.txt,**/*.log" />
@@ -863,8 +993,8 @@
          we want to optionally run all tests and report on the whole
          batch, then we need to set a failure property as in the server
          tests. -->
-    <junit forkmode="perBatch" printsummary="yes" haltonfailure="no" haltonerror="no"
-                    dir="${basedir}">
+    <junit forkmode="${junit.forkmode}" printsummary="yes" haltonfailure="no" haltonerror="no"
+                    dir="${basedir}" failureproperty="${test.failed.property}">
       <jvmarg value="${unitvm}" />
       <jvmarg value="-Djava.security.auth.login.config=${target.testclasses.dir}/auth.conf" />
       <jvmarg value="${test.arguments}" />
@@ -887,7 +1017,7 @@
 
   <!-- runs one local unit test -->
   <target name="test" depends="guard.testclass,tests.prepare" description="Runs one local test using the value of the test.class property">
-    <junit forkmode="perBatch" printsummary="yes" haltonfailure="no" haltonerror="no">
+    <junit fork="yes" forkmode="perBatch" printsummary="yes" haltonfailure="no" haltonerror="no" failureproperty="${test.failed.property}">
       <jvmarg value="${unitvm}" />
       <jvmarg value="-Djava.security.auth.login.config=${target.testclasses.dir}/auth.conf" />
       <jvmarg value="${test.arguments}" />
@@ -912,10 +1042,10 @@
         test-example - a sample unit test
         shows how to make a target to run just one specific unit test instead
         of having to specify the class
-        
+
     It can get a lot more elaborate than this, with various properties being
     set up, etc. Property files can be written out, etc.
-    
+
     <target name="test.example" depends="init">
         <antcall target="test">
             <param name="test.class" value="com.mycompany.myproject.MyTest"/>
