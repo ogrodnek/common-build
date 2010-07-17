@@ -1,27 +1,42 @@
 <ivysettings>
-	<properties file="${ivy.conf.dir}/ivyconf.properties"/>
+  <!-- add dependencies for s3 resolver -->
+  <classpath file="${ivy.settings.dir}/lib/org.springframework.build.aws.ivy.jar" />
+  <classpath file="${ivy.settings.dir}/lib/jets3t/commons-codec-1.3.jar" />
+  <classpath file="${ivy.settings.dir}/lib/jets3t/commons-httpclient-3.1.jar" />
+  <classpath file="${ivy.settings.dir}/lib/jets3t/commons-logging-1.1.1.jar" />
+  <classpath file="${ivy.settings.dir}/lib/jets3t/jets3t-0.6.1.jar" />
+
+  <typedef name="s3" classname="org.springframework.aws.ivy.S3Resolver" />
+
+  <properties file="${ivy.settings.dir}/ivyconf.properties" />
   <properties file="${basedir}/ivyconf.properties"/>
-	<conf defaultResolver="resolverChain"/>
-	<resolvers>
-		<chain name="resolverChain" returnFirst="true">
-			<filesystem name="integration-repo">
-				<ivy pattern="${integration.repo.dir}/artifacts/[organisation]/[module]/ivy-[revision].xml"/>
-				<artifact pattern="${integration.repo.dir}/artifacts/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
-			</filesystem>
-			<filesystem name="filesystem-repo">
-				<ivy pattern="${repository.dir}/[organisation]/[module]/ivy-[revision].xml" />
-				<artifact pattern="${repository.dir}/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
-			</filesystem>
-			<filesystem name="local-repo">
-				<ivy pattern="${local.repo.dir}/[organisation]/[module]/ivy-[revision].xml" />
-				<artifact pattern="${local.repo.dir}/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
-			</filesystem>
-      <url name="s3-repo">
-        <ivy pattern="${s3.repo.url}/[organisation]/[module]/ivy-[revision].xml" />
-        <artifact pattern="${s3.repo.url}/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
-      </url>
-			<ibiblio name="maven2" m2compatible="true" />
-			<ibiblio name="jboss" m2compatible="true" root="http://repository.jboss.org/maven2/" />
-		</chain>
+  
+  <caches lockStrategy="artifact-lock" defaultCacheDir="${ivy.cache.dir}">
+    <cache name="cached-local" useOrigin="true" defaultTTL="1d">
+      <ttl revision="latest.integration" duration="0s" />
+    </cache>
+    <cache name="cached-remote" useOrigin="false" defaultTTL="7d">
+      <ttl organization="${ivy.organization}" duration="1d" />
+    </cache>
+  </caches>
+ 
+  <settings defaultResolver="default-resolver" />
+  <resolvers>
+    
+    <!--<s3 name="s3" accessKey="${s3.accessKey}" secretKey="${s3.secretKey}" cache="cached-remote">
+      <ivy pattern="s3://${s3.repository.bucket}/[organisation]/[module]/ivy-[revision].xml" />
+      <artifact pattern="s3://${s3.repository.bucket}/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
+    </s3>-->
+
+    <filesystem name="integration-repo" cache="cached-local">
+      <ivy pattern="${integration.repo.dir}/artifacts/[organisation]/[module]/ivy-[revision].xml" />
+      <artifact pattern="${integration.repo.dir}/artifacts/[organisation]/[module]/[type]s/[artifact]-[revision].[ext]" />
+    </filesystem>
+
+    <chain name="default-resolver" returnFirst="true">
+      <!-- try developer's local integration repository first -->
+      <resolver ref="integration-repo" />
+      <!--<resolver ref="s3" />-->
+    </chain>
   </resolvers>
 </ivysettings>
