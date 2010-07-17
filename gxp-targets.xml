@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+
+<!--
+  gxp targets:
+  
+  To use add the following to your build.xml:
+  
+  <import file="${common.build.dir}/gxp-targets.xml"/>
+  
+  <target name="gen.main" depends="gxpc.gen.execute"/>
+  
+  Also, set the property gxpc.resources.package to the package that you want the i18n files
+  to be written to
+    
+  Takes all gxp files located in ${src.java.main.dir} and generates
+  java files for them in ${target.gen.java.dir}
+  
+  For more information see:
+  http://gxp.googlecode.com/svn/trunk/compiler.javadoc/com/google/gxp/compiler/ant/GxpcTask.html
+   
+  Author: Timo O'Hara timo@bizo.com>
+ -->
+<project name="gxp-targets" xmlns:ivy="antlib:fr.jayasoft.ivy.ant">
+	<import file="common-targets.xml" />
+
+	<property name="gxpc.18nwarn" value="false" />
+
+	<target name="gxp.tasks" depends="retrieve">
+		<taskdef name="gxpc" classname="com.google.gxp.compiler.ant.GxpcTask" 
+			classpathref="compile.classpath" />
+	</target>
+
+	<target name="gxpc.gen.execute" depends="gxp.tasks" description="generate gxp files">
+		<gxpc srcdir="${src.java.main.dir}" 
+			srcpaths="${src.java.main.dir}" 
+			destdir="${target.gen.java.dir}" 
+			i18nwarn="${gxpc.i18nwarn}" 
+			target="${gxpc.resources.package}" />
+	</target>
+
+</project>

@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+
+<!--
+  Set up scala ant task (based on buildtime dependency configuration).
+ 
+  Recommended usage:
+  
+  (1) Include this file in your build.xml file.
+  
+    <import file="${common.build.dir}/scala-targets.xml"/>
+
+  (2) Include a build-time dependency on the scala compiler in your ivy.xml file.
+
+    <dependency org="scala" name="scala" rev="2.8.0.RC2" conf="default->default;sources->sources;buildtime->compiler"/>
+
+  (3) Redefine the compile targets in your build.xml to use the scala compile steps.
+
+    <target name="compile.source" depends="scala.compile.source, java.compile.source" />
+    <target name="compile.tests" depends="scala.compile.tests, java.compile.tests" />
+ 
+  Note that the scalac compiler analyzes java sources but does not actually compile them, so we need to run both scalac and javac.
+  See http://www.codecommit.com/blog/scala/joint-compilation-of-scala-and-java-sources 
+ 
+  TODO: Add support for scalatest.
+ 
+  Author: Darren Lee (darren@bizo.com)
+ -->
+<project name="scala-targets" xmlns:ivy="antlib:fr.jayasoft.ivy.ant">
+  <import file="common-targets.xml" />
+	
+  <property name="unchecked" value="on" />
+
+  <target name="scala.task.init" depends="retrieve">
+    <path id="scala.compile.classpath">
+      <path refid="compile.classpath" />
+      <pathelement path="${target.classes.dir}" />
+    </path>
+
+    <path id="scala.test.classpath">
+      <path refid="test.classpath" />
+      <pathelement path="${target.classes.dir}" />
+      <pathelement path="${target.testclasses.dir}" />
+    </path>
+
+    <taskdef resource="scala/tools/ant/antlib.xml">
+      <classpath>
+        <path refid="scala.compile.classpath" />
+      </classpath>
+    </taskdef>
+  </target>
+  
+  <path id="scala.main.src">
+    <pathelement path="${src.java.main.dir}" />
+    <pathelement path="${src.scala.main.dir}" />
+    <pathelement path="${target.gen.java.dir}" />
+  </path>
+  
+  <path id="scala.test.src">
+    <pathelement path="${src.java.test.dir}" />
+    <pathelement path="${src.scala.test.dir}" />
+    <pathelement path="${target.gen.java.test.dir}" />    
+  </path>
+
+  <target name="scala.compile.source" depends="scala.task.init">
+    <echo>compiling main scala sources</echo>
+    <scalac destdir="${target.classes.dir}" deprecation="${deprecation}" unchecked="${unchecked}">
+      <src>
+        <path refid="scala.main.src" />
+      </src>
+      <classpath>
+        <path refid="scala.compile.classpath" />
+      </classpath>
+    </scalac>
+  </target>
+  
+  <!--
+    The fsc targets will only work if you have $SCALA_HOME defined, and $SCALA_HOME/bin on
+    your $PATH.
+  -->
+  <target name="fsc.compile.source" depends="scala.task.init">
+    <echo>compiling main scala sources</echo>
+    <fsc destdir="${target.classes.dir}" deprecation="${deprecation}" unchecked="${unchecked}">
+      <src>
+        <path refid="scala.main.src" />
+      </src>
+      <classpath>
+        <path refid="scala.compile.classpath" />
+      </classpath>      
+    </fsc>
+  </target>
+
+  <target name="scala.compile.tests" depends="scala.task.init">
+    <echo>compiling test scala sources</echo>
+    <scalac destdir="${target.testclasses.dir}" deprecation="${deprecation}" unchecked="${unchecked}">
+      <src>
+        <path refid="scala.test.src" />
+      </src>
+      <classpath>
+        <path refid="scala.test.classpath" />
+      </classpath>
+    </scalac>
+  </target>
+  
+  <target name="fsc.compile.tests" depends="scala.task.init">
+    <echo>compiling test scala sources</echo>
+    <fsc destdir="${target.testclasses.dir}" deprecation="${deprecation}" unchecked="${unchecked}">
+      <src>
+        <path refid="scala.test.src" />
+      </src>
+      <classpath>
+        <path refid="scala.test.classpath" />
+      </classpath>      
+    </fsc>
+  </target>
+  
+</project>
